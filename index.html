@@ -2350,3 +2350,20 @@ function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
+
+    clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+let toastTimer;
+
+document.querySelectorAll('.login-tab').forEach(tab => {
+  tab.addEventListener('click', function() {
+    document.querySelectorAll('.login-tab').forEach(t => t.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+
+</script>
+</body>
+</html>
