@@ -1042,7 +1042,7 @@
             <div style="font-size:2rem;margin-bottom:0.5rem;">🎉</div>
             <div style="font-size:1.1rem;font-weight:500;margin-bottom:0.25rem;">Order Placed!</div>
             <div style="font-size:0.82rem;opacity:0.7;margin-bottom:1rem;">You earned loyalty points on this order</div>
-            <div class="lp-points">+${order.points} pts</div>
+            <div class="lp-points" id="earned-points-display">+0 pts</div>
             <div style="font-size:0.78rem;opacity:0.65;margin-top:0.25rem;">Total balance: 748 points</div>
             <div class="lp-bar"><div class="lp-fill"></div></div>
             <div style="font-size:0.72rem;opacity:0.5;">452 more points to your next free pizza</div>
@@ -1866,24 +1866,27 @@ function closeLoginOnOverlay(e) {
 }
 
 function placeOrder() {
-  // 1. Calculate points (1 point per dollar spent)
+// 1. Calculate points based on amount spent
+  // grandTotal is the variable already in your code for the total price
   const earnedPoints = Math.floor(grandTotal); 
-  user.points += earnedPoints;
+  
+  // 2. Update the HTML to show the real points
+  const pointsElement = document.getElementById('earned-points-display');
+  if (pointsElement) {
+    pointsElement.textContent = `+${earnedPoints} pts`;
+  }
 
-  // 2. Create the order object with the dynamic points
-  const orderObj = {
-    id: '#' + Math.floor(Math.random() * 90000 + 10000),
-    date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-    total: grandTotal.toFixed(2),
-    points: earnedPoints, // Use the calculated points here
-    items: [...cart]
-  };
+  // 3. Update the delivery time message
+  showToast('🎉 Order placed! Estimated delivery: 35–40 mins');
 
-  // 3. Save to history and show confirmation
-  user.orderHistory.unshift(orderObj);
-  renderOrderConfirmation(orderObj);
-  showToast('Order placed! Estimated delivery: 35–45 mins');
-  setTimeout(() => showPage('checkout'), 500);
+  // 4. Move to the confirmation screen
+  // (Your code likely uses showPage or a similar function)
+  setTimeout(() => {
+    // If you use a step-based checkout:
+    showCheckoutStep(3); 
+    // OR if you use a page-based system:
+    // showPage('confirmation');
+  }, 500);
 }
 
 let toastTimer;
