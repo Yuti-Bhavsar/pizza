@@ -1042,7 +1042,7 @@
             <div style="font-size:2rem;margin-bottom:0.5rem;">🎉</div>
             <div style="font-size:1.1rem;font-weight:500;margin-bottom:0.25rem;">Order Placed!</div>
             <div style="font-size:0.82rem;opacity:0.7;margin-bottom:1rem;">You earned loyalty points on this order</div>
-            <div class="lp-points">+98 pts</div>
+            <div class="lp-points">+${order.points} pts</div>
             <div style="font-size:0.78rem;opacity:0.65;margin-top:0.25rem;">Total balance: 748 points</div>
             <div class="lp-bar"><div class="lp-fill"></div></div>
             <div style="font-size:0.72rem;opacity:0.5;">452 more points to your next free pizza</div>
@@ -1866,7 +1866,23 @@ function closeLoginOnOverlay(e) {
 }
 
 function placeOrder() {
-  showToast('🎉 Order placed! Estimated delivery: 35–45 mins');
+  // 1. Calculate points (1 point per dollar spent)
+  const earnedPoints = Math.floor(grandTotal); 
+  user.points += earnedPoints;
+
+  // 2. Create the order object with the dynamic points
+  const orderObj = {
+    id: '#' + Math.floor(Math.random() * 90000 + 10000),
+    date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    total: grandTotal.toFixed(2),
+    points: earnedPoints, // Use the calculated points here
+    items: [...cart]
+  };
+
+  // 3. Save to history and show confirmation
+  user.orderHistory.unshift(orderObj);
+  renderOrderConfirmation(orderObj);
+  showToast('Order placed! Estimated delivery: 35–45 mins');
   setTimeout(() => showPage('checkout'), 500);
 }
 
