@@ -954,10 +954,11 @@
             <div class="co-sum-row"><span>Pepperoni Supreme (L) ×2</span><span>$43.98</span></div>
             <div class="co-sum-row"><span>Custom Pizza (BYO)</span><span>$15.49</span></div>
             <hr style="border:none;border-top:0.5px solid #EDE8DF;margin:0.625rem 0;">
-            <div class="co-sum-row"><span>Subtotal</span><span>$74.46</span></div>
-            <div class="co-sum-row"><span>Delivery fee</span><span>$6.50</span></div>
-            <div class="co-sum-row"><span>Tax (8.25%)</span><span>$6.14</span></div>
-            <div class="co-sum-total"><span>Total</span><span>$87.10</span></div>
+            <div class="co-sum-row"><span>Subtotal</span><span id="co-subtotal"></span></div>
+            <div class="co-sum-row"><span>Delivery fee</span><span id="co-delivery"></span></div>
+            <div class="co-sum-row"><span>Tax (8.25%)</span><span id="co-tax"></span></div>
+            <div class="co-sum-row"><span>Tip</span><span id="co-tip">$0.00</span></div>
+            <div class="co-sum-total"><span>Total</span><span id="co-total"></span></div>
             <button class="co-place-btn" onclick="coGoStep(2)">Continue to Payment →</button>
           </div>
         </div>
@@ -1021,11 +1022,11 @@
         <div>
           <div class="co-section" style="position:sticky;top:88px;">
             <h4>Final Summary</h4>
-            <div class="co-sum-row"><span>Subtotal</span><span>$74.46</span></div>
-            <div class="co-sum-row"><span>Delivery fee</span><span>$6.50</span></div>
-            <div class="co-sum-row"><span>Tip (15%)</span><span>$11.17</span></div>
-            <div class="co-sum-row"><span>Tax (8.25%)</span><span>$6.14</span></div>
-            <div class="co-sum-total"><span>Total</span><span>$98.27</span></div>
+            <div class="co-sum-row"><span>Subtotal</span><span id="co-subtotal"></span></div>
+            <div class="co-sum-row"><span>Delivery fee</span><span id="co-delivery"></span></div>
+            <div class="co-sum-row"><span>Tax (8.25%)</span><span id="co-tax"></span></div>
+            <div class="co-sum-row"><span>Tip</span><span id="co-tip">$0.00</span></div>
+            <div class="co-sum-total"><span>Total</span><span id="co-total"></span></div>
             <button class="co-place-btn" onclick="coGoStep(3)">Place Order →</button>
             <button onclick="coGoStep(1)" style="width:100%;background:none;border:none;font-family:'DM Sans',sans-serif;font-size:0.82rem;color:var(--warm-gray);cursor:pointer;margin-top:0.5rem;">← Back to Details</button>
           </div>
@@ -1502,7 +1503,7 @@
       <div class="rc-badge locked">Need 550 more</div>
     </div>
 
-    <button class="lp-redeem-btn" onclick="showPage('checkout');showToast('Loyalty points applied at checkout!')">Redeem Points at Checkout</button>
+    <button class="lp-redeem-btn" onclick="showPage('checkout');updateCheckoutTotals();showToast('Loyalty points applied at checkout!')">Redeem Points at Checkout</button>
     <div style="text-align:center;margin-top:0.75rem;font-size:0.78rem;color:var(--warm-gray);">Points can also be redeemed in person via QR code at the front desk.</div>
   </div>
 </div>
@@ -1765,6 +1766,25 @@
 </div>
 
 <script>
+// ===== GLOBAL TOTAL CALCULATOR =====
+window.selectedTip = 0;
+
+function calculateTotals(includeTip = false) {
+  const subtotal = cartItems.reduce((s, i) => s + i.price * i.qty, 0);
+  const delivery = cartItems.length > 0 ? 6.50 : 0;
+  const tax = subtotal * 0.0825;
+
+  let tip = 0;
+  if (includeTip) tip = window.selectedTip;
+
+  return {
+    subtotal,
+    delivery,
+    tax,
+    tip,
+    total: subtotal + delivery + tax + tip
+  };
+}
 function showPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   const target = document.getElementById('page-' + name);
@@ -1866,26 +1886,19 @@ function closeLoginOnOverlay(e) {
 }
 
 function placeOrder() {
-// 1. Calculate points based on amount spent
-  // grandTotal is the variable already in your code for the total price
-  const earnedPoints = Math.floor(grandTotal); 
-  
-  // 2. Update the HTML to show the real points
+const { total } = calculateTotals(true);
+
+  const earnedPoints = Math.floor(total);
+
   const pointsElement = document.getElementById('earned-points-display');
   if (pointsElement) {
     pointsElement.textContent = `+${earnedPoints} pts`;
   }
 
-  // 3. Update the delivery time message
   showToast('🎉 Order placed! Estimated delivery: 35–40 mins');
 
-  // 4. Move to the confirmation screen
-  // (Your code likely uses showPage or a similar function)
   setTimeout(() => {
-    // If you use a step-based checkout:
-    showCheckoutStep(3); 
-    // OR if you use a page-based system:
-    // showPage('confirmation');
+    showCheckoutStep(3);
   }, 500);
 }
 
@@ -2169,10 +2182,32 @@ let cartItems = [
 ];
 
 function updateCartCount() {
-  const total = cartItems.reduce((s,i) => s + i.qty, 0);
-  document.querySelectorAll('#cart-count, .cart-badge').forEach(el => el.textContent = total);
+const { subtotal, delivery, tax, total } = calculateTotals();
+
+  const set = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val;
+  };
+
+  set('cart-subtotal', '$' + subtotal.toFixed(2));
+  set('cart-delivery', '$' + delivery.toFixed(2));
+  set('cart-tax', '$' + tax.toFixed(2));
+  set('cart-total', '$' + total.toFixed(2));
 }
 
+function updateCheckoutTotals(includeTip = false) {
+  const { subtotal, delivery, tax, tip, total } = calculateTotals(includeTip);
+
+  document.getElementById('co-subtotal').textContent = '$' + subtotal.toFixed(2);
+  document.getElementById('co-delivery').textContent = '$' + delivery.toFixed(2);
+  document.getElementById('co-tax').textContent = '$' + tax.toFixed(2);
+
+  const tipEl = document.getElementById('co-tip');
+  if (tipEl) tipEl.textContent = '$' + tip.toFixed(2);
+
+  document.getElementById('co-total').textContent = '$' + total.toFixed(2);
+}
+  
 function renderCart() {
   const container = document.getElementById('cart-items-container');
   const emptyState = document.getElementById('cart-empty-state');
@@ -2223,16 +2258,17 @@ function removeCartItem(id) {
 }
 
 function updateCartTotals() {
-  const subtotal = cartItems.reduce((s,i) => s + i.price * i.qty, 0);
-  const delivery = cartItems.length > 0 ? 6.50 : 0;
-  const tax = subtotal * 0.0825;
-  const total = subtotal + delivery + tax;
-  const set = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
+const { subtotal, delivery, tax, total } = calculateTotals();
+
+  const set = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val;
+  };
+
   set('cart-subtotal', '$' + subtotal.toFixed(2));
   set('cart-delivery', '$' + delivery.toFixed(2));
   set('cart-tax', '$' + tax.toFixed(2));
   set('cart-total', '$' + total.toFixed(2));
-  document.getElementById('floating-cart-total') && (document.getElementById('floating-cart-total').textContent = '$' + total.toFixed(2));
 }
 
 function applyPromo() {
@@ -2312,9 +2348,20 @@ function coSelectPay(btn) {
   if(cardFields) cardFields.style.display = btn.textContent.includes('Credit') ? 'block' : 'none';
 }
 
-function coSelectTip(btn) {
-  btn.closest('.tip-row').querySelectorAll('.tip-tab').forEach(t => t.classList.remove('sel'));
-  btn.classList.add('sel');
+function coSelectTip(el) {
+  document.querySelectorAll('.tip-tab').forEach(t => t.classList.remove('sel'));
+  el.classList.add('sel');
+
+  const subtotal = calculateTotals().subtotal;
+
+  if (el.innerText.includes('%')) {
+    const percent = parseInt(el.innerText);
+    window.selectedTip = subtotal * (percent / 100);
+  } else {
+    window.selectedTip = 0;
+  }
+
+  updateCheckoutTotals(true);
 }
 
 function coCheckDistance() {
